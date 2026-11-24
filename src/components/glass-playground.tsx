@@ -3,9 +3,17 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { GRADIENTS, gradientBackground, imageValidationError, type Gradient } from "@/lib/backgrounds";
+import { homeGlassPreset, volumetricLiquidGlass } from "@/lib/optics-material";
 import { GlassFilter, GlassSurface } from "./glass-surface";
+import { OpticsProvider } from "./optics-provider";
 import { GradientEditor } from "./gradient-editor";
 import { CameraIcon, CloseIcon, GradientIcon, ImageIcon, LayersIcon, MoonIcon } from "./icons";
+
+const frostedMaterial = {
+  ...homeGlassPreset.material,
+  internalDiffusion: volumetricLiquidGlass.internalDiffusion,
+  surfaceRoughness: volumetricLiquidGlass.surfaceRoughness,
+};
 
 export function GlassPlayground({ children }: { children: ReactNode }) {
   const [gradient, setGradient] = useState<Gradient>(GRADIENTS[0]);
@@ -13,7 +21,7 @@ export function GlassPlayground({ children }: { children: ReactNode }) {
   const [imageName, setImageName] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [clearGlass, setClearGlass] = useState(false);
+  const [clearGlass, setClearGlass] = useState(true);
   const [loadingImage, setLoadingImage] = useState(false);
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -96,6 +104,10 @@ export function GlassPlayground({ children }: { children: ReactNode }) {
   const sceneStyle = {
     "--scene-background": imageUrl ? `url("${imageUrl}")` : gradientBackground(gradient),
   } as CSSProperties;
+  const surfaceSettings = {
+    opticalProfile: homeGlassPreset.profile,
+    material: clearGlass ? homeGlassPreset.material : frostedMaterial,
+  };
 
   return (
     <div
@@ -110,6 +122,7 @@ export function GlassPlayground({ children }: { children: ReactNode }) {
           <span>liquid<span className="wordmark-light">glass</span><span className="brand-period">.</span></span>
         </Link>
         <div className="background-tools" role="group" aria-label="Page background">
+          <Link href="/optics" className="flat-button">Optical lab</Link>
           <button className="flat-button" type="button" onClick={() => fileInput.current?.click()} disabled={loadingImage}>
             <ImageIcon />
             <span>{loadingImage ? "Opening…" : "Image"}</span>
@@ -139,39 +152,47 @@ export function GlassPlayground({ children }: { children: ReactNode }) {
 
       <main className="hero">
         <div className="hero-copy">{children}</div>
-        <div className="glass-controls" aria-label="Interactive glass controls">
-          <GlassSurface
-            className="focus-control"
-            aria-label="Focus mode"
-            aria-pressed={focused}
-            onClick={() => setFocused((value) => !value)}
-            title="Toggle focus mode"
-          >
-            <span className="moon-disc"><MoonIcon /></span>
-            <span className="focus-label">Focus</span>
-            <span className="focus-indicator" aria-hidden="true" />
-          </GlassSurface>
-          <div className="round-controls">
+        <OpticsProvider backdrop={{ gradient, imageUrl, dimmed: focused }} backdropClassName="hero-optical-source"
+          quality={homeGlassPreset.quality}>
+          <div className="glass-controls" aria-label="Interactive glass controls">
             <GlassSurface
-              className="round-control camera-control"
-              aria-label="Choose a background image"
-              onClick={() => fileInput.current?.click()}
-              disabled={loadingImage}
-              title="Choose a background image"
+              {...surfaceSettings}
+              className="focus-control"
+              aria-label="Focus mode"
+              aria-pressed={focused}
+              onClick={() => setFocused((value) => !value)}
+              title="Toggle focus mode"
             >
-              <CameraIcon />
+              <span className="moon-disc"><MoonIcon /></span>
+              <span className="focus-label">Focus</span>
+              <span className="focus-indicator" aria-hidden="true" />
             </GlassSurface>
-            <GlassSurface
-              className="round-control layers-control"
-              aria-label="Clear glass"
-              aria-pressed={clearGlass}
-              onClick={() => setClearGlass((value) => !value)}
-              title="Toggle clear and frosted glass"
-            >
-              <LayersIcon />
-            </GlassSurface>
+            <div className="round-controls">
+              <GlassSurface
+                {...surfaceSettings}
+                className="round-control camera-control"
+                opticalShape="circle"
+                aria-label="Choose a background image"
+                onClick={() => fileInput.current?.click()}
+                disabled={loadingImage}
+                title="Choose a background image"
+              >
+                <CameraIcon />
+              </GlassSurface>
+              <GlassSurface
+                {...surfaceSettings}
+                className="round-control layers-control"
+                opticalShape="circle"
+                aria-label="Clear glass"
+                aria-pressed={clearGlass}
+                onClick={() => setClearGlass((value) => !value)}
+                title="Toggle clear and frosted glass"
+              >
+                <LayersIcon />
+              </GlassSurface>
+            </div>
           </div>
-        </div>
+        </OpticsProvider>
       </main>
 
       <footer className="site-footer">

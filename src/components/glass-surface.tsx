@@ -1,15 +1,46 @@
 "use client";
 
-import { useEffect, useRef, type ButtonHTMLAttributes } from "react";
+import { useEffect, useLayoutEffect, useRef, type ButtonHTMLAttributes } from "react";
+import { volumetricLiquidGlass, type OpticalMaterial, type OpticalProfile, type OpticalShape } from "@/lib/optics-material";
+import { useOpticsScene } from "./optics-provider";
 
-export function GlassSurface({
+type SurfaceProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  material?: Partial<OpticalMaterial>;
+  opticalProfile?: OpticalProfile;
+  opticalShape?: OpticalShape;
+  debugView?: number;
+};
+
+export function LiquidGlassSurface({
   children,
   className = "",
+  material,
+  opticalProfile = "auto",
+  opticalShape = "squircle",
+  debugView = 0,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: SurfaceProps) {
   const ref = useRef<HTMLButtonElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const scene = useOpticsScene();
+  const options = useRef({
+    material: volumetricLiquidGlass, profile: opticalProfile, shape: opticalShape, debugView,
+  });
+
+  useLayoutEffect(() => {
+    options.current = {
+      material: { ...volumetricLiquidGlass, ...material }, profile: opticalProfile, shape: opticalShape, debugView,
+    };
+    scene?.invalidate();
+  });
+
+  useLayoutEffect(() => {
+    if (!scene || !ref.current || !canvas.current) return;
+    return scene.register(ref.current, canvas.current, () => options.current);
+  }, [scene]);
 
   useEffect(() => {
+    if (scene) return;
     const element = ref.current;
     if (!element) return;
     let frame = 0;
@@ -36,19 +67,24 @@ export function GlassSurface({
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule);
     };
-  }, []);
+  }, [scene]);
 
   return (
     <button ref={ref} type="button" className={`glass-surface ${className}`} {...props}>
-      <span className="glass-refraction" aria-hidden="true">
-        <span className="glass-scene" />
+      <span className="glass-legacy" aria-hidden="true">
+        <span className="glass-refraction">
+          <span className="glass-scene" />
+        </span>
+        <span className="glass-tint" />
       </span>
-      <span className="glass-tint" aria-hidden="true" />
       <span className="glass-rim" aria-hidden="true" />
+      {scene && <canvas ref={canvas} className="glass-volume" aria-hidden="true" />}
       <span className="glass-content">{children}</span>
     </button>
   );
 }
+
+export { LiquidGlassSurface as GlassSurface };
 
 export function GlassFilter() {
   return (
