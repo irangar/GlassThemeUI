@@ -1,7 +1,17 @@
 # Liquid Glass UI
 
+![Liquid Glass UI title graphic](docs/screenshots/1title.png)
+
 A Next.js playground based on the supplied liquid-glass reference, with a neutral
 charcoal background and local image / custom gradient controls.
+
+## Screenshots
+
+![Liquid Glass UI main screen](docs/screenshots/2main.PNG)
+
+![Liquid Glass UI screenshot 1](docs/screenshots/sub1.PNG)
+
+![Liquid Glass UI screenshot 2](docs/screenshots/sub2.PNG)
 
 ## Run locally
 
